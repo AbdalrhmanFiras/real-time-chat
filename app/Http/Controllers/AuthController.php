@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+use App\Http\Resources\AuthResource;
 use App\Models\User;
 use App\Http\Requests\RegisterForm;
 use Illuminate\Http\Request;
@@ -20,7 +21,7 @@ class AuthController extends Controller
 
 
         return response()->json([
-            'user' => $user,
+            'user' => new AuthResource($user),
             'message' => 'user registerd successfully'
         ], 200);
 
@@ -37,7 +38,7 @@ class AuthController extends Controller
         $user = User::where('email', $request->email)->firstOrFail();//get the user by email
 
         return response()->json([
-            'user' => $user,
+            'user' => new AuthResource($user),
             'token' => $token = $user->createToken('auth-token')->plainTextToken
         ], 200);
 
