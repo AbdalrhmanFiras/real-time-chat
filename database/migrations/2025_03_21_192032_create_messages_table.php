@@ -16,7 +16,7 @@ return new class extends Migration {
             $table->foreignId('receiver_id')->constrained('users')->onDelete('cascade');
             $table->text('message')->nullable();
             $table->string('file_path')->nullable();// for images
-            $table->timestamp('read_at');//for the seen
+            $table->timestamp('read_at')->nullable();//for the seen
             $table->timestamps();
         });
     }
