@@ -50,6 +50,9 @@ class AuthController extends Controller
             ['user_id' => $user->id],
             ['is_online' => true, 'last_seen_at' => null]
         );
+        $userStatus->refresh();
+
+        $user->save();
 
         return response()->json([
             'user' => new AuthResource($user),
@@ -62,8 +65,13 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
+        // Ensure the user is authenticated
+        if (!$request->user()) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+
         // Update user status to offline
-        $userStatus = UserStatus::where('user_id', $request->user()->id)->update([
+        UserStatus::where('user_id', $request->user()->id)->update([
             'is_online' => false,
             'last_seen_at' => now(),
         ]);
@@ -71,10 +79,11 @@ class AuthController extends Controller
         // Revoke the user's token
         $request->user()->tokens()->delete();
 
-        // Return response with updated status
+        // Return success response
         return response()->json([
             'message' => 'Logged out successfully',
-            'status' => new StatusUserResource($userStatus),
+            'is_online' => false,
+            'last_seen_at' => now()->toDateTimeString(),
         ]);
     }
 }

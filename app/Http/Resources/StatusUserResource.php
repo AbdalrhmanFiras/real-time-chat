@@ -16,7 +16,6 @@ class StatusUserResource extends JsonResource
     {
         return [
             'is_online' => $this->is_online,
-            'last_seen_at' => $this->last_seen_at,
 
         ];
     }
