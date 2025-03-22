@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Events\MessageSend;
 use App\Events\MessageRead;
+use App\Events\MessageTyping;
 use App\Models\Message;
 use Illuminate\Container\Attributes\Storage;
 use Illuminate\Http\Request;
@@ -63,6 +64,21 @@ class MessageController extends Controller
             $message->update(['read_at' => now()]);
             broadcast(new MessageRead($message))->toOthers();
         }
+        return response()->json($message);
+
     }
+
+
+    public function TypingMessage(Request $request)
+    {
+        $request->validate([
+            'receiver_id' => 'required|exists:users,id',
+        ]);
+
+        broadcast(new MessageTyping(auth()->user()?->getModel(), $request->receiver_id))->toOthers();
+        return response()->json(['status' => 'Typing started']);
+    }
+
+
 
 }
