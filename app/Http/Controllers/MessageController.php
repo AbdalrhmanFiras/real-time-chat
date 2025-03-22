@@ -88,7 +88,7 @@ class MessageController extends Controller
     {
 
         $request->validate([
-            'message' => 'required|string|max:1000'
+            'message' => 'required|string|max:1000',
         ]);
 
         $message = Message::find($message_id);
@@ -100,16 +100,15 @@ class MessageController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $message->update(['message' => $request->messages]);
+        $message->update(['message' => $request->message]);
 
-        broadcast(new MessageUpdated($message))->toOthers();
+        broadcast(new MessageUpdate($message))->toOthers();
 
         return response()->json([
             'message' => 'Message updated successfully',
-            'data' => new MessageResource($message)
+            new MessageResource($message)
         ]);
     }
-
 }
 
 

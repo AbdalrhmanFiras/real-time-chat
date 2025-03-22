@@ -14,7 +14,7 @@ use Illuminate\Queue\SerializesModels;
 class MessageUpdate
 {
 
-    public $messages;
+    public Message $message;
 
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -34,7 +34,7 @@ class MessageUpdate
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('chat.' . $this->messages->first()->receiver_id),
+            new PrivateChannel('chat.' . $this->message->receiver_id),
         ];
     }
 }

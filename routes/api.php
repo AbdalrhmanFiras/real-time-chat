@@ -19,4 +19,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/Get-message/{receiver_id}', [MessageController::class, 'Getmessage']);
     Route::post('/Mark-As-Read/{message_id}', [MessageController::class, 'MarkAsRead']);
     Route::post('/Typing-Message', [MessageController::class, 'TypingMessage']);
+    Route::put('/update-message/{message_id}', [MessageController::class, 'UpdateMessage']);
 });
