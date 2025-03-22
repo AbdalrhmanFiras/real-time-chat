@@ -5,20 +5,16 @@ namespace App\Http\Controllers;
 use App\Events\MessageSend;
 use App\Events\MessageRead;
 use App\Events\MessageTyping;
+use App\Http\Requests\CreateMessage;
 use App\Models\Message;
 use App\Http\Resources\MessageResource;
 use Illuminate\Container\Attributes\Storage;
 use Illuminate\Http\Request;
 class MessageController extends Controller
 {
-    public function Sendmessage(Request $request)
+    public function Sendmessage(CreateMessage $request)
     {// post
 
-        $request->validate([
-            'receiver_id' => 'required|exists:users,id',
-            'message' => 'nullable|string',
-            'file' => 'nullable|file|max:10240',// 10mb max
-        ]);
 
         $filepath = null;
         if ($request->hasFile('file')) {
