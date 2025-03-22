@@ -83,4 +83,35 @@ class MessageController extends Controller
     }
 
 
+    public function UpdateMessage(Request $request, $message_id)
+    {
+
+        $request->validate([
+            'message' => 'required|string|max:1000'
+        ]);
+
+        $message = Message::findOrFail($message_id);
+
+        if (!$message) {
+            return response()->json(['error' => 'Message not found'], 404);
+        }
+
+        if ($message->sender_id !== auth()->id()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $message->update(['message' => $request->message]);
+
+        broadcast(new MessageUpdate($message))->toOthers();
+
+        return response()->json([
+            'message' => 'Message updated successfully',
+            'data' => new MessageResource($message)
+        ]);
+    }
+
 }
+
+
+
+
