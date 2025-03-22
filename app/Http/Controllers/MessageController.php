@@ -6,6 +6,7 @@ use App\Events\MessageSend;
 use App\Events\MessageRead;
 use App\Events\MessageTyping;
 use App\Models\Message;
+use App\Http\Resources\MessageResource;
 use Illuminate\Container\Attributes\Storage;
 use Illuminate\Http\Request;
 class MessageController extends Controller
@@ -35,7 +36,7 @@ class MessageController extends Controller
         broadcast(new MessageSend($message))->toOthers();
         // send message that i made to everyone is online(event)
 
-        return response()->json($message, 201);
+        return response()->json(new MessageResource($message), 201);
 
     }
 
@@ -54,7 +55,7 @@ class MessageController extends Controller
         // 2	2	1	أهلاً!	2023-10-01 12:05:00
         // 3	1	2	كيف حالك؟	2023-10-01 12:10:00
         // 4	2	1	بخير، وأنت؟	2023-10-01 12:15:00
-        return response()->json($messages);
+        return response()->json(MessageResource::collection($messages));
     }
 
     public function MarkAsRead($message_id)
@@ -70,7 +71,7 @@ class MessageController extends Controller
             // Broadcast the message read event to the sender
             broadcast(new MessageRead($message))->toOthers();
         }
-        return response()->json($message);
+        return response()->json(new MessageResource($message));
 
     }
 
