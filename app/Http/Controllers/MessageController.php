@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\MessageDelete;
 use App\Events\MessageSend;
 use App\Events\MessageRead;
 use App\Events\MessageTyping;
@@ -108,6 +109,29 @@ class MessageController extends Controller
             'message' => 'Message updated successfully',
             new MessageResource($message)
         ]);
+    }
+
+
+    public function DeltetMessage($message_id)
+    {
+
+        $message = Message::find($message_id)->first();
+
+        if (!$message)
+            return response()->json(['error' => 'Message not found'], 404);
+
+        if ($message->sender_id !== auth()->id())
+            return response()->json(['error' => 'Unauthorized'], 403);
+
+
+
+        $message->delete();
+
+        broadcast(new MessageDelete($message))->toOthers();
+
+        return response()->json('the message deleted');
+
+
     }
 }
 
