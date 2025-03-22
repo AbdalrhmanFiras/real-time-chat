@@ -14,7 +14,7 @@ class MessageController extends Controller
     {// post
 
         $request->validate([
-            'receiver_id' => 'required|string|user,id',
+            'receiver_id' => 'required|exists:users,id',
             'message' => 'nullable|string',
             'file' => 'nullable|file|max:10240',// 10mb max
         ]);
@@ -47,7 +47,7 @@ class MessageController extends Controller
         })->orWhere(function ($query) use ($receiver_id) {
             $query->where('sender_id', $receiver_id)
                 ->where('receiver_id', auth()->id());
-        })->orderBy('create_at', 'asc')->paginate(15);
+        })->orderBy('created_at', 'asc')->paginate(15);
         // الرسائل في قاعدة البيانات
         // id	sender_id	receiver_id	message	created_at
         // 1	1	2	مرحبًا!	2023-10-01 12:00:00
@@ -59,9 +59,15 @@ class MessageController extends Controller
 
     public function MarkAsRead($message_id)
     {
-        $message = Message::find($message_id)->first();
-        if ($message->receiver_id === auth()->id()) {
+        $message = Message::where('id', $message_id)->first();
+
+        if (!$message) {
+            return response()->json(['error' => 'Message not found'], 404);
+        }
+        if (!$message->read_at) { // Update only if it's unread
             $message->update(['read_at' => now()]);
+
+            // Broadcast the message read event to the sender
             broadcast(new MessageRead($message))->toOthers();
         }
         return response()->json($message);
@@ -78,7 +84,6 @@ class MessageController extends Controller
         broadcast(new MessageTyping(auth()->user()?->getModel(), $request->receiver_id))->toOthers();
         return response()->json(['status' => 'Typing started']);
     }
-
 
 
 }
