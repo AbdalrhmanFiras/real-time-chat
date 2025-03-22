@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Events\MessageSend;
 use App\Events\MessageRead;
 use App\Events\MessageTyping;
+use App\Events\MessageUpdate;
 use App\Http\Requests\CreateMessage;
 use App\Models\Message;
 use App\Http\Resources\MessageResource;
@@ -90,8 +91,7 @@ class MessageController extends Controller
             'message' => 'required|string|max:1000'
         ]);
 
-        $message = Message::findOrFail($message_id);
-
+        $message = Message::find($message_id);
         if (!$message) {
             return response()->json(['error' => 'Message not found'], 404);
         }
@@ -100,9 +100,9 @@ class MessageController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $message->update(['message' => $request->message]);
+        $message->update(['message' => $request->messages]);
 
-        broadcast(new MessageUpdate($message))->toOthers();
+        broadcast(new MessageUpdated($message))->toOthers();
 
         return response()->json([
             'message' => 'Message updated successfully',
