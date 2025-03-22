@@ -115,7 +115,7 @@ class MessageController extends Controller
     public function DeltetMessage($message_id)
     {
 
-        $message = Message::find($message_id)->first();
+        $message = Message::find($message_id);
 
         if (!$message)
             return response()->json(['error' => 'Message not found'], 404);

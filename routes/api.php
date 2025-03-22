@@ -20,5 +20,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/Mark-As-Read/{message_id}', [MessageController::class, 'MarkAsRead']);
     Route::post('/Typing-Message', [MessageController::class, 'TypingMessage']);
     Route::put('/update-message/{message_id}', [MessageController::class, 'UpdateMessage']);
-    Route::put('/delete-message/{message_id}', [MessageController::class, 'DeltetMessage']);
+    Route::delete('/delete-message/{message_id}', [MessageController::class, 'DeltetMessage']);
 });
