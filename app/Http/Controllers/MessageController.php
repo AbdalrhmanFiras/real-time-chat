@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Events\MessageSend;
+use App\Events\MessageRead;
 use App\Models\Message;
 use Illuminate\Container\Attributes\Storage;
 use Illuminate\Http\Request;
@@ -39,7 +40,6 @@ class MessageController extends Controller
 
     public function Getmessage($receiver_id)
     {
-
         $messages = Message::where(function ($query) use ($receiver_id) {
             $query->where('sender_id', auth()->id())
                 ->where('receiver_id', $receiver_id);
@@ -56,5 +56,13 @@ class MessageController extends Controller
         return response()->json($messages);
     }
 
+    public function MarkAsRead($message_id)
+    {
+        $message = Message::find($message_id)->first();
+        if ($message->receiver_id === auth()->id()) {
+            $message->update(['read_at' => now()]);
+            broadcast(new MessageRead($message))->toOthers();
+        }
+    }
 
 }
