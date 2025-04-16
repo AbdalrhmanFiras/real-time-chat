@@ -35,6 +35,10 @@ class AuthController extends Controller
             'is_online' => true
         ]);
 
+
+
+
+
         $message = "your otp code is " . $otp;
         $account_sid = getenv("TWILIO_SID");
         $auth_token = getenv("TWILIO_AUTH_TOKEN");
