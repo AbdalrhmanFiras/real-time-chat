@@ -1,104 +1,88 @@
 <?php
 
 namespace App\Http\Controllers;
+
+use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Resources\AuthResource;
 use App\Http\Resources\StatusUserResource;
-use App\Models\Message;
 use Illuminate\Support\Facades\Mail;
 use App\Models\User;
 use App\Http\Requests\RegisterForm;
 use App\Models\UserStatus;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Hash;
-use Auth;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpFoundation\Response;
 use Twilio\Rest\Client;
+
 class AuthController extends Controller
 {
     public function register(RegisterForm $request)
     {
+        try {
+            DB::beginTransaction();
+            // always use validated to pass valid data to the model
+            $data = $request->validated();
+            $user = User::create($data);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'phone' => $request->phone,
-            'password' => Hash::make($request->password)
-        ]);
+            $otp = mt_rand(100000, 999999);
 
-        $otp = mt_rand(100000, 999999);
-        $user->otp = $otp;
-        $user->expired_at = Carbon::now()->addMinutes(5);
-        $user->save();
+            // don't add otp to the database
+            // always use cache to store otp
+            $user->otp = $otp;
+            $user->expired_at = Carbon::now()->addMinutes(5);
+            $user->save();
 
-        $userStatus = UserStatus::create([
-            'user_id' => $user->id,
-            'is_online' => true
-        ]);
-
-
-
+            // use relationship to create user status
+            $userStatus = $user->hasStatus()->create([
+                'is_online' => true
+            ]);
 
 
-        $message = "your otp code is " . $otp;
-        $account_sid = getenv("TWILIO_SID");
-        $auth_token = getenv("TWILIO_AUTH_TOKEN");
-        $number = getenv("TWILIO_FROM");
-        $client = new Client($account_sid, $auth_token);
-        $client->Messages->create('+9647722881560', [
-            'from' => $number,
-            'body' => $message
-        ]);
-
-        // Mail::send('emails.otp', ['otp' => $otp], function ($message) use ($user) {
-        //     $message->to($user->email)
-        //         ->subject('Your OTP for Email Verification');
-        // });
-
-        return response()->json([
-            'otp' => 'your Otp Sent to email',
-            'user' => new AuthResource($user),
-            'status' => new StatusUserResource($userStatus),
-            'message' => 'user registerd successfully'
-        ], 200);
-
-
+            // $message = "your otp code is " . $otp;
+            // $account_sid = env("TWILIO_SID");
+            // $auth_token = env("TWILIO_AUTH_TOKEN");
+            // $number = env("TWILIO_FROM");
+            // $client = new Client($account_sid, $auth_token);
+            // $client->Messages->create($data['phone'], [
+            //     'from' => $number,
+            //     'body' => $message
+            // ]);
+            DB::commit();
+            return response()->json([
+                'otp' => 'your Otp Sent to email',
+                'user' => new AuthResource($user),
+                'status' => new StatusUserResource($userStatus),
+                'message' => 'user registerd successfully'
+            ], 200);
+        } catch (\Throwable $th) {
+            DB::rollBack();;
+            return response()->json(["message" => $th->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
 
-    public function login(Request $request)
+    public function login(LoginRequest $request)
     {
-
-        if (!Auth::attempt($request->only('email', 'password'))) {
+        if (!Auth::attempt($request->validated())) {
             return response()->json(['message' => 'invalid email or password'], 401);
         }
-
-        $user = User::where('email', $request->email)->firstOrFail();//get the user by email
-
+        $user = User::where('email', $request->email)->first();
         $userStatus = UserStatus::updateOrCreate(
             ['user_id' => $user->id],
             ['is_online' => true, 'last_seen_at' => null]
         );
         $userStatus->refresh();
-
         $user->save();
-        // Mail::send('emails.otp', ['otp' => $otp], function ($message) use ($user) {
-        //     $message->to($user->email)
-        //         ->subject('Your OTP for Email Verification');
-        // });
-
-
-
         Mail::send('emails.otp', ['user' => $user], function ($message) use ($user) {
             $message->to($user->email)->subject('Your Email has been login successfully');
         });
-
         return response()->json([
             'user' => new AuthResource($user),
             'status' => new StatusUserResource($userStatus),
-            'token' => $token = $user->createToken('auth-token')->plainTextToken
+            'token' => $user->createToken('auth-token')->plainTextToken
         ], 200);
-
-
     }
 
     public function logout(Request $request)
@@ -151,10 +135,5 @@ class AuthController extends Controller
         $user->save();
 
         return response()->json(['meesage' => 'your Email verified successfully. ']);
-
-
     }
-
-
 }
-

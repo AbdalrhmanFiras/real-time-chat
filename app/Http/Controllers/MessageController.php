@@ -10,49 +10,30 @@ use App\Events\MessageUpdate;
 use App\Http\Requests\CreateMessage;
 use App\Models\Message;
 use App\Http\Resources\MessageResource;
-use Illuminate\Container\Attributes\Storage;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+
 class MessageController extends Controller
 {
     public function Sendmessage(CreateMessage $request)
     {// post
-
-
-        $filepath = null;
-        if ($request->hasFile('file')) {
-            $filePath = Storage::disk('public')->put('chat_files', $request->file('file'));
-        }
-
-
-        $message = Message::create([
-            'sender_id' => auth()->id(),
-            'receiver_id' => $request->receiver_id,
-            'message' => $request->message,
-            'file_path' => $filepath
-        ]);
-
+        $message = Message::create($request->validated());
         broadcast(new MessageSend($message))->toOthers();
-        // send message that i made to everyone is online(event)
-
         return response()->json(new MessageResource($message), 201);
-
     }
 
     public function Getmessage($receiver_id)
     {
-        $messages = Message::where(function ($query) use ($receiver_id) {
-            $query->where('sender_id', auth()->id())
-                ->where('receiver_id', $receiver_id);
-        })->orWhere(function ($query) use ($receiver_id) {
-            $query->where('sender_id', $receiver_id)
-                ->where('receiver_id', auth()->id());
-        })->orderBy('created_at', 'asc')->paginate(15);
-        // الرسائل في قاعدة البيانات
-        // id	sender_id	receiver_id	message	created_at
-        // 1	1	2	مرحبًا!	2023-10-01 12:00:00
-        // 2	2	1	أهلاً!	2023-10-01 12:05:00
-        // 3	1	2	كيف حالك؟	2023-10-01 12:10:00
-        // 4	2	1	بخير، وأنت؟	2023-10-01 12:15:00
+        $sender_id = auth()->id();
+        $messages = Message::with('Sender', 'Receiver')
+        ->where(function ($query) use ($receiver_id, $sender_id) {
+            $query->where('sender_id', $sender_id)->where('receiver_id', $receiver_id);
+        })
+        ->orWhere(function ($query) use ($receiver_id, $sender_id) {
+            $query->where('sender_id', $receiver_id)->where('receiver_id', $sender_id);
+        })
+        ->orderBy('created_at', 'asc')
+        ->paginate(15);
         return response()->json(MessageResource::collection($messages));
     }
 
@@ -61,7 +42,8 @@ class MessageController extends Controller
         $message = Message::where('id', $message_id)->first();
 
         if (!$message) {
-            return response()->json(['error' => 'Message not found'], 404);
+            // always use key 'message'
+            return response()->json(['message' => 'Message not found'], 404);
         }
         if (!$message->read_at) { // Update only if it's unread
             $message->update(['read_at' => now()]);

@@ -63,6 +63,7 @@ class User extends Authenticatable
     }
 
 
+
     public function hasStatus()
     {
         return $this->hasOne(UserStatus::class);

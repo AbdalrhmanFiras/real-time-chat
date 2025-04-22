@@ -27,4 +27,14 @@ class CreateMessage extends FormRequest
             'file' => 'nullable|file|max:10240',
         ];
     }
+
+    public function validated($key = null, $default = null)
+    {
+        $data = parent::validated();
+        $data['sender_id'] = auth()->id();
+        if ($this->hasFile('file')) {
+            $data['file_path'] = $this->file('file')->store('chat_files');
+        }
+        return $data;
+    }
 }
