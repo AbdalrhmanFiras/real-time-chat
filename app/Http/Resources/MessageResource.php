@@ -19,6 +19,8 @@ class MessageResource extends JsonResource
             'sender_id' => $this->sender_id,
             'receiver_id' => $this->receiver_id,
             'message' => $this->message,
+            'sender' => new AuthResource($this->whenLoaded('Sender')),
+            'receiver' => new AuthResource($this->whenLoaded('Receiver')),
             'file_path' => $this->when(!is_null($this->file), $this->file),
             'read_at' => $this->when(!is_null($this->read_at), $this->read_at)
         ];
